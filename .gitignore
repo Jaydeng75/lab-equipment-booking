@@ -13,6 +13,11 @@ venv/
 *.sqlite
 *.sqlite3
 
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
 # OS / editor
 .DS_Store
 .idea/

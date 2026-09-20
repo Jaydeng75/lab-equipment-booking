@@ -127,17 +127,43 @@ Two threads use separate SQLite connections to request the same Raspberry Pi slo
 
 The project retains `GeminiProvider`. To try it manually, set `GEMINI_API_KEY` and run a normal worker without `--mock`. This was **not recorded as proof** in this submission because the weekend requirements explicitly allow scripted models and only one higher-grade option is required; the project already includes three offline options above.
 
+## Optional: put the databases in Supabase
+
+The storage layer (`app/storage.py`) supports **Supabase Postgres** as an alternative to the
+two local SQLite files. Nothing is required on a clean machine for the demos/tests — SQLite
+remains the default — but if you export a Supabase connection string, both `agent.db` and
+`lab.db` live in Supabase instead.
+
+```bash
+export SUPABASE_DB_URL="postgresql://postgres:YOUR-PASSWORD@db.xxx.supabase.co:5432/postgres"
+pip install -r requirements.txt -r requirements-supabase.txt        # psycopg is the only extra
+
+python -m scripts.apply_supabase          # create schema + seed data (uses SUPABASE_DB_URL)
+python -m scripts.demo                    # the same demo, now against Supabase
+python -m scripts.crash_demo              # crash/replay proof, against Supabase
+pytest -q                                 # the same tests still use local SQLite
+```
+
+A `.env.example` shows every variable; `SUPABASE_HOST/PORT/DB/USER/PASSWORD` work as a
+stand-in for the full URL. The apply script is idempotent-ish (it drops and rebuilds the
+tables) and both schemas have Postgres-dialect copies in `schema/lab.pg.sql` and
+`schema/agent.pg.sql`. The queue/lease/idempotency mechanics are identical: `book` still
+relies on the `UNIQUE(equipment_id, slot)` constraint, notifications still dedupe on a
+unique `dedupe_key`, and crash replay still replays stored side-effect results.
+
 ## Important files
 
 - `DESIGN.md` — design choices, tables, tools, agents, clash and failure behavior.
-- `schema/lab.sql` — domain schema and constraints.
-- `schema/agent.sql` — memory, queue, leases and recorded steps.
+- `schema/lab.sql` / `schema/lab.pg.sql` — domain schema (SQLite / Postgres).
+- `schema/agent.sql` / `schema/agent.pg.sql` — memory, queue, leases and recorded steps.
+- `app/storage.py` — shared connection layer: SQLite by default, Supabase Postgres opt-in.
 - `app/lab_db.py` — domain reads/safe writes/idempotency.
 - `app/tools/lab_tools.py` — five documented domain tools.
 - `app/agents.py` — supervisor, specialists and key propagation.
 - `app/memory.py` — queue, leases, cancellation, retry and dead-lettering.
 - `scripts/demo.py` — no-key end-to-end demo.
 - `scripts/crash_demo.py` — dead-worker crash/replay proof.
+- `scripts/apply_supabase.py` — apply the Postgres schema + seed to a Supabase project.
 - `tests/` — 25 tests including crash/replay and thread race.
 
 ## Submission packaging

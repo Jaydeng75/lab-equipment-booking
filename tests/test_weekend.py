@@ -82,8 +82,10 @@ def test_two_database_schemas_are_separate(tmp_path):
     db = LabDb(str(tmp_path / "lab.db"))
     store.migrate()
     db.migrate()
-    agent_tables = {r[0] for r in store.conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    lab_tables = {r[0] for r in db.conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    agent_tables = {r[0] for r in store.conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    lab_tables = {r[0] for r in db.conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     assert {"thread", "run", "run_step", "tool_call"} <= agent_tables
     assert {"student", "equipment", "booking", "notification", "idempotency"} <= lab_tables
     assert "booking" not in agent_tables

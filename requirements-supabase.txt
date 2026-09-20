@@ -1,0 +1,3 @@
+# Optional: only needed when running against Supabase (Postgres). The core
+# requirements.txt has everything for the local no-key demos and tests.
+psycopg[binary]>=3.1
